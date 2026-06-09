@@ -15,9 +15,37 @@ export class PaymeService {
         const { method, params, id } = body;
         let result;
 
-        // switch (method) {
-        //     case 'CheckPerformTransaction':
-        // }
+        switch (method) {
+            case 'CheckPerformTransaction':
+                result = await this.check(params);
+                break;
+
+            case 'CreateTransaction':
+                result = await this.create(params);
+                break;
+
+            case 'PerformTransaction':
+                result = await this.perform(params);
+                break;
+
+            case 'CancelTransaction':
+                result = await this.cancel(params);
+                break;
+
+            case 'CheckTransaction':
+                result = await this.checkTx(params);
+                break;
+
+            case 'GetStatement':
+                result = await this.statement();
+
+            default:
+                return {
+                    error: { code: -32601 }
+                };
+        }
+
+        return { id, result }
 
 
 
@@ -95,6 +123,52 @@ export class PaymeService {
             transaction: tx.id.toString(),
             perform_time: tx.performTime,
             state: 2
+        }
+    }
+
+    async cancel(params: any) {
+        const tx = await this.txRepo.findOne({
+            where: { paymentTransactionId: params.id }
+        });
+
+        if (!tx) throw new PaymeException(-31003, 'Not found');
+
+        tx.state = tx.state === 2 ? -2 : -1;
+        tx.cancelTime = Date.now();
+        tx.reason = params.reason;
+
+        await this.txRepo.save(tx);
+
+        await this.orders.cancel(Number(tx.orderId));
+
+
+        return {
+            transaction: tx.id.toString(),
+            cancel_time: tx.cancelTime,
+            state: tx.state
+        }
+    }
+
+    async checkTx(params: any) {
+        const tx = await this.txRepo.findOne({
+            where: { paymentTransactionId: params.id }
+        });
+
+        return {
+            create_time: tx?.createTime,
+            perform_time: tx?.performTime,
+            cancel_time: tx?.cancelTime,
+            transaction: tx?.id.toString(),
+            state: tx?.state,
+            reason: tx?.reason || null
+        };
+    }
+
+    async statement() {
+        const txs = await this.txRepo.find();
+
+        return {
+            transactions: txs
         }
     }
 
