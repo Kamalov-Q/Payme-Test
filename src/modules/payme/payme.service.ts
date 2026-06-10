@@ -3,12 +3,14 @@ import { OrdersService } from "../orders/orders.service";
 import { Repository } from "typeorm";
 import { PaymeTransaction } from "./entities/payme-transaction.entity";
 import { PaymeException } from "src/exceptions/payme.exception";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class PaymeService {
     constructor(
+        private configSvc: ConfigService,
         private orders: OrdersService,
-        private txRepo: Repository<PaymeTransaction>
+        private txRepo: Repository<PaymeTransaction>,
     ) { }
 
     async handle(body: any) {
@@ -170,6 +172,34 @@ export class PaymeService {
         return {
             transactions: txs
         }
+    }
+
+    async generateCheckoutLink(
+        orderId: number,
+        amount: number
+    ): Promise<string> {
+        const merchantId = this.configSvc.get<string>('payme.merchantId');
+
+        const checkoutUrl = this.configSvc.get<string>('payme.checkoutUrl');
+
+        /**
+        * Payme requires:
+        * m  -> merchant id
+        * ac -> account object
+        * a  -> amount
+        */
+
+        const payload = {
+            m: merchantId,
+            ac: {
+                orderId,
+            },
+            a: amount * 100 //Payme uses "tiyin" so 1 so'm = 100 tiyin
+        };
+
+        const encoded = Buffer.from(JSON.stringify(payload),).toString('base64');
+
+        return `${checkoutUrl}/${encoded}`;
     }
 
 }
