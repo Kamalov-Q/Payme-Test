@@ -8,6 +8,6 @@ export class PaymeAuthService {
         const decoded = Buffer.from(auth.replace('Basic ', ''),
             'base64',).toString();
 
-        return decoded === `Payme:${process.env.PAYME_KEY}`;
+        return decoded === `Paycom:${process.env.PAYME_KEY}`;
     }
 }

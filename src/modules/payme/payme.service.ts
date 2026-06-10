@@ -194,7 +194,7 @@ export class PaymeService {
             ac: {
                 orderId,
             },
-            a: amount * 100 //Payme uses "tiyin" so 1 so'm = 100 tiyin
+            a: amount * 100     //  Payme uses "tiyin" so 1 so'm = 100 tiyin
         };
 
         const encoded = Buffer.from(JSON.stringify(payload),).toString('base64');
